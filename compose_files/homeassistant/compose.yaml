@@ -1,0 +1,70 @@
+version: '3.9'
+###
+networks:
+  hass:
+  host:
+    external: true
+###
+services:
+  homeassistant:
+    container_name: Home-Assistant
+    image: homeassistant/home-assistant:stable
+    #    user: 3002:3002
+    network_mode: "host"
+    expose:
+      - 8123
+    volumes:
+      - /nfs/homeassistant:/config
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ha.rule=Host(`ha.lab.local`)"
+      - "traefik.http.routers.ha.tls=true"
+      - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
+      - "traefik.http.routers.homeassistant.entrypoints=websecure"
+    restart: always
+##
+  whisper:
+    container_name: Whisper
+    image: rhasspy/wyoming-whisper
+    # Unprivileged user
+    user: 5555:5555
+    networks:
+      - hass
+    volumes:
+      - /nfs/wyoming/whisper:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    command: --model small-int8 --language en
+    restart: unless-stopped
+##
+  piper:
+    container_name: Piper
+    image: rhasspy/wyoming-piper
+    # Unprivileged user
+    user: 5555:5555
+    networks:
+      - hass
+    volumes:
+      - /nfs/wyoming/piper:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    command: --voice en-us-ryan-medium
+    restart: unless-stopped
+##
+  openwakeword:
+    container_name: openwakeword
+    image: rhasspy/wyoming-openwakeword
+    # Unprivileged user
+    user: 5555:5555
+    networks:
+      - hass
+    volumes:
+      - /nfs/wyoming/wakeword:/data
+      #- ./wakeword:/custom
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    command: --preload-model 'ok_nabu' 
+    #--custom-model-dir /custom
+    restart: unless-stopped

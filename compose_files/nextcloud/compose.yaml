@@ -1,0 +1,91 @@
+version: '2'
+
+volumes:
+  nextcloud-app:
+    external: true
+  nextcloud-db:
+    external: true
+  nextcloud-redis:
+    external: true
+
+services:
+  db:
+    image: mariadb:10.5
+    container_name: nc-db
+    hostname: nc-db
+    restart: always
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    volumes:
+      - nextcloud-db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=$nc_mysql_root_password
+      - MYSQL_PASSWORD=$nc_mysql_password
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+    networks:
+      - nextcloud
+
+  app:
+    container_name: nextcloud
+    hostname: nextcloud
+    image: nextcloud
+    restart: always
+
+    links:
+      - db
+    volumes:
+      - nextcloud-app:/var/www/html
+    environment:
+      - MYSQL_PASSWORD=$nc_mysql_password
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_HOST=db
+      - NEXTCLOUD_TRUSTED_DOMAIN=$NEXTCLOUD_DOMAIN_NAME
+      # IP of traefik container.
+      - TRUSTED_PROXIES=172.27.0.12
+      # Redis host name (container_name)
+      - REDIS_HOST=nc-redis
+    networks:
+      - nextcloud
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nextcloud.rule=Host(`$NEXTCLOUD_DOMAIN_NAME`)"
+      - "traefik.http.routers.nextcloud.tls=true"
+      - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
+      - "traefik.http.routers.nextcloud.entrypoints=websecure"
+      - "traefik.http.routers.nextcloud.service=nextcloud"
+  # Nextcloud (in memory) Redis Cache - speed up lookup transactions
+  # Speeds up Nextcloud by reducing the time spent "looking" for things
+  nc-redis:
+    # Official REDIS 6.2 image based upon alpine Linux (to keep it lightweight)
+    image: redis:6.2-alpine
+    # Set to allow easy Docker DNS name resolution - not strictly necessary
+    container_name: nc-redis
+    # Same as above
+    hostname: nc-redis
+    # Container will restart unless we specifically stop it
+    restart: unless-stopped
+    # Defines how we want our container to connect outside
+    networks:
+    # ONLY using an internal network and not exposing to the internet
+      - nextcloud
+    # Persistent volumes with bind mounts to easily move/backup data
+    volumes:
+      # I like to use the /opt folder to hold my Docker bind mounted volumes
+      - nextcloud-redis:/data
+networks:
+  traefik-net:
+    driver: bridge
+    external: true
+  # Internal facing network for Nextcloud Docker containers
+  nextcloud:
+    name: nextcloud
+    # Define how we want the network created
+    driver: bridge
+
+secrets:
+  nc_mysql_password:
+    external: True
+  nc_mysql_root_password:
+    external: True

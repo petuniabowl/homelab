@@ -1,0 +1,48 @@
+version: "3"
+
+# More info at https://github.com/pi-hole/docker-pi-hole/ and https://docs.pi-hole.net/
+services:
+  pihole:
+    container_name: pihole
+    domainname: lab.local
+    image: pihole/pihole:latest
+    # For DHCP it is recommended to remove these ports and instead add: network_mode: "host"
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      # Expose web interface to port 8090. Only needed when traefik isn't working.
+      #- "8090:80/tcp"
+    environment:
+      TZ: 'America/Chicago'
+      WEBPASSWORD: $pihole_webpassword
+      # IP of the server we're running on. Not sure it this is needed.
+      ServerIP: 192.168.3.164
+      VIRTUAL_HOST: pihole.lab.local
+      VIRTUAL_PORT: 80
+    # Volumes store your data between container upgrades
+    volumes:
+      - 'pihole-etc:/etc/pihole'
+      - 'pihole-dnsmasq:/etc/dnsmasq.d'
+    #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+    #cap_add:
+    #  - NET_ADMIN # Required if you are using Pi-hole as your DHCP server, else not needed
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pihole.rule=Host(`pihole.lab.local`)"
+      - "traefik.http.routers.pihole.tls=true"
+      - "traefik.http.services.pihole.loadbalancer.server.port=80"
+networks:
+  traefik-net:
+    driver: bridge
+    external: true
+volumes:
+  pihole-etc:
+    external: true
+  pihole-dnsmasq:
+    external: true
+secrets:
+  pihole_webpassword:
+    external: true
