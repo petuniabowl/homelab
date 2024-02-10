@@ -19,6 +19,8 @@ services:
       # Change './actual-data' below to the path to the folder you want Actual to store its data in on your server.
       # '/data' is the path Actual will look for its files in by default, so leave that as-is.
       - /nfs/actual-data:/data
+    networks:
+      - traefik-net
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.actualbudget.rule=Host(`actualbudget.lab.local`)"
@@ -27,3 +29,7 @@ services:
       - "traefik.http.routers.actualbudget.entrypoints=websecure"
       #- "traefik.http.routers.actualbudget.service=actual_server"
     restart: unless-stopped
+networks:
+  traefik-net:
+    driver: bridge
+    external: true
