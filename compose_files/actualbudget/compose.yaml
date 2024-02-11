@@ -1,6 +1,6 @@
 version: '3'
 services:
-  actual_server:
+  actual-server:
     image: docker.io/actualbudget/actual-server:latest
     #ports:
       # This line makes Actual available at port 5006 of the device you run the server on,
@@ -23,11 +23,9 @@ services:
       - traefik-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.actualbudget.rule=Host(`actualbudget.lab.local`)"
-      #- "traefik.http.routers.actualbudget.tls=true"
-      - "traefik.http.services.actualbudget.loadbalancer.server.port=5006"
-      - "traefik.http.routers.actualbudget.entrypoints=websecure"
-      #- "traefik.http.routers.actualbudget.service=actual_server"
+      - "traefik.http.routers.actual-server-router.rule=Host(`budget.lab.local`)"
+      - "traefik.http.routers.actual-server-router.tls=true"
+      - "traefik.http.services.actual-server.loadbalancer.server.port=5006"
     restart: unless-stopped
 networks:
   traefik-net:
