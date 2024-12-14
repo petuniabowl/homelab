@@ -1,7 +1,7 @@
 version: '3.9'
 ###
 networks:
-  host:
+  traefik-net:
     external: true
 ###
 services:
@@ -10,7 +10,9 @@ services:
         container_name: 'jellyfin'
         user: 1000:1000
         # Network mode of 'host' exposes the ports on the host. This is needed for DLNA access.
-        network_mode: 'host'
+        #network_mode: 'host'
+        networks:
+          - traefik-net
         volumes:
           - /path/to/config:/nfs/jellyfin/config
           - /path/to/cache:/nfs/jellyfin/cache
@@ -36,7 +38,7 @@ services:
           - 'traefik.http.middlewares.jellyfin-mw.headers.SSLRedirect=true'
           #### The sslHost option is the host name that is used to redirect http requests to https.
           #### This is the exact URL that will be redirected to, so you can remove the :9999 port if using default SSL port
-          - 'traefik.http.middlewares.jellyfin-mw.headers.SSLHost=jellyfin.lab.local:9999'
+          - 'traefik.http.middlewares.jellyfin-mw.headers.SSLHost=jellyfin.lab.local'
           #### Set sslForceHost to true and set SSLHost to forced requests to use SSLHost even the ones that are already using SSL.
           #### Note that this uses SSLHost verbatim, so add the port to SSLHost if you are using an alternate port.
           - 'traefik.http.middlewares.jellyfin-mw.headers.SSLForceHost=true'
@@ -68,6 +70,6 @@ services:
           - 'traefik.http.routers.jellyfin-insecure.rule=Host(`jellyfin.lab.local`)' # OPTIONAL: && PathPrefix(`/jellyfin`)
           - 'traefik.http.routers.jellyfin-insecure.middlewares=jellyfin-insecure-mw'
           - 'traefik.http.middlewares.jellyfin-insecure-mw.redirectscheme.scheme=https'
-          - 'traefik.http.middlewares.jellyfin-insecure-mw.redirectscheme.port=9999' # remove if you are using a default port
+          - 'traefik.http.middlewares.jellyfin-insecure-mw.redirectscheme.port' # remove if you are using a default port
           - 'traefik.http.middlewares.jellyfin-insecure-mw.redirectscheme.permanent=false'
           - 'traefik.http.routers.jellyfin-insecure.service=noop@internal'
