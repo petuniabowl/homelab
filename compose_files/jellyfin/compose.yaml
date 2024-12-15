@@ -14,10 +14,10 @@ services:
         networks:
           - traefik-net
         volumes:
-          - /nfs/jellyfin/config:config
-          - /nfs/jellyfin/cache:cache
+          - /nfs/jellyfin/config:/config
+          - /nfs/jellyfin/cache:/cache
           # Update this configuration as desired
-          - /nfs/jellyfin/media:media
+          - /nfs/jellyfin/media:/media
         restart: always
         labels:
           - 'traefik.enable=true'
