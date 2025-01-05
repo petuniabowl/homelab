@@ -17,7 +17,9 @@ services:
           - /nfs/jellyfin/config:/config
           - /nfs/jellyfin/cache:/cache
           # Update this configuration as desired
-          - /nfs/jellyfin/media:/media
+          - /nfs/jellyfin/media/movies:/media/movies
+          - /nfs/jellyfin/media/music:/media/music
+          - /nfs/jellyfin/media/audiobooks:/media/audiobooks
         restart: always
         labels:
           - 'traefik.enable=true'
